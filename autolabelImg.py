@@ -13,6 +13,8 @@ import shutil
 import os
 import webbrowser as wb
 import glob
+import yaml
+
 
 from functools import partial
 # from collections import defaultdict
@@ -46,6 +48,7 @@ from libs.hashableQListWidgetItem import HashableQListWidgetItem
 from ultralytics import YOLO
 from tools.change_labels import rework_classes
 from tools.repeat_filter import main as filter_main
+from libs.download_e import get_classestxt
 import torch
 
 __appname__ = 'AutoLabelImg'
@@ -251,6 +254,9 @@ class MainWindow(QMainWindow, WindowMixin):
         filter_prev = action(get_str('prev'), self.load_imagels_prev, 'F10', 'prev')
         filter_next = action(get_str('next'), self.load_imagels_next, 'F12', 'next')
 
+        #################### Train Test Split ##############################
+        train_test_split= action(get_str('trainTestSplit'), self.train_test_split, 'Ctrl+T', 'trainTestSplit', get_str('trainTestSplitDetail'))
+
 ######################################################################################
         def get_format_meta(format):
             """
@@ -442,7 +448,7 @@ class MainWindow(QMainWindow, WindowMixin):
         self.tools = self.toolbar('Tools')
         self.actions.beginner = (
             open, open_dir, change_save_dir, open_next_image, open_prev_image, verify, save, save_format,
-            autolabel, autolabelall, None, create, copy, delete, None, zoom_in, zoom, zoom_out, fit_window, fit_width)
+            autolabel, autolabelall,train_test_split, None, create, copy, delete, None, zoom_in, zoom, zoom_out, fit_window, fit_width)
 
         self.actions.advanced = (
             open, open_dir, change_save_dir, open_next_image, open_prev_image, save, save_format, None,
@@ -1292,6 +1298,7 @@ class MainWindow(QMainWindow, WindowMixin):
             with open(self.cfg_path, 'w') as f:
                 yaml.dump(data, f)
 
+
     def open_annotation_dialog(self, _value=False):
         if self.file_path is None:
             self.statusBar().showMessage('Please select image first')
@@ -1434,6 +1441,16 @@ class MainWindow(QMainWindow, WindowMixin):
         self.load_file(self.filepath)
 
 
+    ### Process custom yaml file
+    def process_yaml(self, yaml_file,txt_output_path):
+        with open(yaml_file, 'r',encoding="utf-8") as file:
+            data = yaml.safe_load(file)
+            class_names = data.get('names', [])
+        output_path=os.path.join(txt_output_path, "classes.txt")
+        with open(output_path, 'w') as f:
+            for class_name in class_names:
+                f.write(f"{class_name}\n")
+
     def auto_label_all(self):
         if not self.filepath:
             QMessageBox.information(self, 'Wrong!', 'have no loaded folder yet, please check again.')
@@ -1462,7 +1479,7 @@ class MainWindow(QMainWindow, WindowMixin):
         self.delete_files(del_labels_list)
         # Load a pretrained YOLOv8n model
         model_dir="models"
-        option = ["yolov8n", "yolov8s", "yolov8m", "yolov8l", "yolov8x",
+        option = ["custom-weights", "yolov8n", "yolov8s", "yolov8m", "yolov8l", "yolov8x",
                   "yolov9t", "yolov9s", "yolov9m", "yolov9c", "yolov9e",
                   "yolov10n", "yolov10s", "yolov10m", "yolov10b", "yolov10l", "yolov10x","rtdetr-l","rtdetr-x"]
 
@@ -1474,11 +1491,29 @@ class MainWindow(QMainWindow, WindowMixin):
             QMessageBox.information(self, 'Information!', 'Please choose yolo version before.')
             return
 
+        if model == "custom-weights":
+            pt_file, _ = QFileDialog.getOpenFileName(self, "Select custom-weights.pt file", "",
+                                                     "PyTorch Model Files (*.pt)")
+            if not pt_file:
+                QMessageBox.information(self, 'Error!', 'Please select the custom-weights.pt file.')
+                return
+
+            # Hiển thị hộp thoại chọn file .yaml
+            yaml_file, _ = QFileDialog.getOpenFileName(self, "Select custom.yaml file", "", "YAML Files (*.yaml)")
+            if not yaml_file:
+                QMessageBox.information(self, 'Error!', 'Please select the custom.yaml file.')
+                return
+
+            self.model = pt_file
+            self.yaml = yaml_file
+            self.process_yaml(yaml_file, "save_dir")
+
         # Sử dụng từ điển để lấy tên tập tin mô hình tương ứng
-        if model in model_dict:
-            self.model = model_dict[model]
         else:
-            QMessageBox.information(self, 'Error!', 'Selected model is not valid.')
+            self.model = model_dict.get(model, None)
+            if self.model is None:
+                QMessageBox.information(self, 'Error!', 'Selected model is not valid.')
+                return
 
         model = YOLO(self.model)
 
@@ -1512,9 +1547,6 @@ class MainWindow(QMainWindow, WindowMixin):
         for i in range(length):
             progress.setValue(i)
             try:
-                # model.predict(detect_images[i], save_txt=True, save_path=save_dir, device=self.device,
-                #               conf=self.conf, iou=self.iou, classes=self.classes)
-                # Dự đoán và lưu kết quả
                 model.predict(detect_images[i], save_txt=True, save=False, device=self.device, conf=self.conf,
                               iou=self.iou, classes=self.classes)
 
@@ -1551,6 +1583,9 @@ class MainWindow(QMainWindow, WindowMixin):
         # rework_classes(del_labels_list)
         self.load_file(self.filepath)
         # self.import_dir_images(self.last_open_dir)
+
+    def train_test_split(self):
+        pass
 
     def create_default(self):
         config = {

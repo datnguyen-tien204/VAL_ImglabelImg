@@ -1,9 +1,5 @@
 Last loaded image folder: E:/NLP/VAL_LabelImgs/AutoLabelImg/imgs_input
-<<<<<<< HEAD
 Last loaded image name: aachen_000004_000019_leftImg8bit_1_phi_1.8.png
-=======
-Last loaded image name: aachen_000006_000019_leftImg8bit_1_phi_1.8.png
->>>>>>> 88ea668 (Re-add yolov8x.pt with Git LFS)
 Last loaded label folder: E:/NLP/VAL_LabelImgs/AutoLabelImg/save_dir
 check_ls: null
 classes:

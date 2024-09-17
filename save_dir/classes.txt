@@ -1,9 +1,4 @@
 person
-<<<<<<< HEAD
-car
-bicycle
-bus
-=======
 bicycle
 car
 motorbike
@@ -83,4 +78,3 @@ scissors
 teddy bear
 hair drier
 toothbrush
->>>>>>> 88ea668 (Re-add yolov8x.pt with Git LFS)

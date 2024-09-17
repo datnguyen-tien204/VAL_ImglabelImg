@@ -1416,7 +1416,11 @@ class MainWindow(QMainWindow, WindowMixin):
 
     def auto_label(self):
         if not self.filepath:
+<<<<<<< HEAD
             QMessageBox.information(self, 'Wrong!', 'have no loaded folder yet, please check again.')
+=======
+            QMessageBox.information(self, 'Wrong!', 'Please choose folder before using Val_AutolabelImg.')
+>>>>>>> 88ea668 (Re-add yolov8x.pt with Git LFS)
             return
         file = self.filepath.split('\\')[-1]
         fname = file.split('.')[0]
@@ -1510,6 +1514,10 @@ class MainWindow(QMainWindow, WindowMixin):
 
         # Sử dụng từ điển để lấy tên tập tin mô hình tương ứng
         else:
+<<<<<<< HEAD
+=======
+            get_classestxt(self.default_save_dir)
+>>>>>>> 88ea668 (Re-add yolov8x.pt with Git LFS)
             self.model = model_dict.get(model, None)
             if self.model is None:
                 QMessageBox.information(self, 'Error!', 'Selected model is not valid.')

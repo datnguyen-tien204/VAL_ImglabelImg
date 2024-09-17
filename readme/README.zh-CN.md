@@ -14,13 +14,13 @@
 # Introduction
 通过使用最新的 YOLO 和 RT-DETR，我们可以在非常短的时间内标注数千张图像。该工具被设计为用户友好且易于使用，具有简单的界面，使用户能够快速有效地标注图像。该工具还配备了许多使其易于使用的功能，例如标注单张图像中的多个对象、标注不同形状和大小的对象，以及标注不同颜色的对象。此外，我们还可以使用您提供的权重中的自定义类别。
 <p align="center">
-    <img src="/github/readme/images/imgs1.png" width="360">
+    <img src="images/imgs1.png" width="360">
 </p>
 
 VAL-AutoLabelImg 的界面与... 类似 [LabelImg](https://github.com/HumanSignal/labelImg)
 您可以通过以下方式查看我们的演示视频：
 <p align="center">
-    <img src="/github/readme/videos/demo.gif" width="1000">
+    <img src="videos/demo.gif" width="1000">
     <br>
     <sup>Demo VAL-AutoLabelImg <a href="https://github.com/ultralytics/ultralytics" target="_blank"><i>on Yolov8</i></a></sup>
 </p>

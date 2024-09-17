@@ -16,13 +16,13 @@ This is a tool used for labeling based on LabelImg, primarily designed for Objec
 By using YOLO and RT-DETR Latest, we can label thousands of images in a very short time. This tool is designed to be user-friendly and easy to use, with a simple interface that allows users to label images quickly and efficiently. The tool is also equipped with a variety of features that make it easy to use, such as the ability to label multiple objects in a single image, the ability to label objects with different shapes and sizes, and the ability to label objects with different colors. Besides, we can use custom classes from our weights.
 
 <p align="center">
-    <img src="/github/readme/images/imgs1.png" width="360">
+    <img src="readme/images/imgs1.png" width="360">
 </p>
 
 The UI of VAL-AutoLabelImg is similar to [LabelImg](https://github.com/HumanSignal/labelImg)
 You can see our video demo as:
 <p align="center">
-    <img src="/github/readme/videos/demo.gif" width="1000">
+    <img src="readme/videos/demo.gif" width="1000">
     <br>
     <sup>Demo VAL-AutoLabelImg <a href="https://github.com/ultralytics/ultralytics" target="_blank"><i>on Yolov8</i></a></sup>
 </p>

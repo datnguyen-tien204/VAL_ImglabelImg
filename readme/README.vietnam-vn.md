@@ -14,13 +14,13 @@
 # Introduction
 Bằng cách sử dụng YOLO và RT-DETR mới nhất, chúng ta có thể đánh nhãn hàng nghìn hình ảnh chỉ trong một thời gian rất ngắn. Công cụ này được thiết kế để thân thiện với người dùng và dễ sử dụng, với giao diện đơn giản cho phép người dùng đánh nhãn hình ảnh một cách nhanh chóng và hiệu quả. Công cụ cũng được trang bị nhiều tính năng giúp dễ sử dụng, chẳng hạn như khả năng đánh nhãn nhiều đối tượng trong một hình ảnh, khả năng đánh nhãn các đối tượng có hình dạng và kích thước khác nhau, và khả năng đánh nhãn các đối tượng với các màu sắc khác nhau. Bên cạnh đó, chúng ta có thể sử dụng các lớp tùy chỉnh từ weights của bạn.
 <p align="center">
-    <img src="/github/readme/images/imgs1.png" width="360">
+    <img src="images/imgs1.png" width="360">
 </p>
 
 Giao diện của VAL-AutoLabelImg tương tự như [LabelImg](https://github.com/HumanSignal/labelImg)
 Bạn có thể xem video demo của chúng tôi như sau:
 <p align="center">
-    <img src="/github/readme/videos/demo.gif" width="1000">
+    <img src="videos/demo.gif" width="1000">
     <br>
     <sup>Demo VAL-AutoLabelImg <a href="https://github.com/ultralytics/ultralytics" target="_blank"><i>on Yolov8</i></a></sup>
 </p>

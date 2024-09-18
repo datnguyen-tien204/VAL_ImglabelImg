@@ -1425,11 +1425,75 @@ class MainWindow(QMainWindow, WindowMixin):
         if os.path.exists(lab_path):
             os.remove(lab_path)
 
+        model_dir = "models"
+        option = ["custom-weights", "yolov8n", "yolov8s", "yolov8m", "yolov8l", "yolov8x",
+                  "yolov9t", "yolov9s", "yolov9m", "yolov9c", "yolov9e",
+                  "yolov10n", "yolov10s", "yolov10m", "yolov10b", "yolov10l", "yolov10x", "rtdetr-l", "rtdetr-x"]
+
+        model_dict = {model: os.path.join(model_dir, f"{model}.pt") for model in option}
+
+        model, ok = QInputDialog.getItem(self, "Select YOLO Model",
+                                         "Choose a model:", option, 0, False)
+        if not ok:
+            QMessageBox.information(self, 'Information!', 'Please choose yolo version before.')
+            return
+
+        if model == "custom-weights":
+            pt_file, _ = QFileDialog.getOpenFileName(self, "Select custom-weights.pt file", "",
+                                                     "PyTorch Model Files (*.pt)")
+            if not pt_file:
+                QMessageBox.information(self, 'Error!', 'Please select the custom-weights.pt file.')
+                return
+
+            # Hiển thị hộp thoại chọn file .yaml
+            yaml_file, _ = QFileDialog.getOpenFileName(self, "Select custom.yaml file", "", "YAML Files (*.yaml)")
+            if not yaml_file:
+                QMessageBox.information(self, 'Error!', 'Please select the custom.yaml file.')
+                return
+
+            self.model = pt_file
+            self.yaml = yaml_file
+            self.process_yaml(yaml_file, "save_dir")
+
+        # Sử dụng từ điển để lấy tên tập tin mô hình tương ứng
+        else:
+            get_classestxt(self.default_save_dir)
+            self.model = model_dict.get(model, None)
+            if self.model is None:
+                QMessageBox.information(self, 'Error!', 'Selected model is not valid.')
+                return
+
         # Load a pretrained YOLOv8n model
         model = YOLO(self.model)
+
+        ######## Remove runs predict before using
+        predict_dir = 'runs/predict'
+        if os.path.exists(predict_dir):
+            shutil.rmtree(predict_dir)
+
+        ##### Remove all files in save_dir
+        files = glob.glob(os.path.join(self.default_save_dir, '*'))
+        for file in files:
+            if os.path.basename(file) != 'classes.txt':
+                try:
+                    if os.path.isfile(file):
+                        os.remove(file)
+                    elif os.path.isdir(file):
+                        shutil.rmtree(file)
+                except Exception as e:
+                    print(f"Không thể xóa {file}: {e}")
+
         try:
-            model.predict(self.filepath, save_txt=True, save_path=self.default_save_dir, device=self.device,
-                          conf=self.conf, iou=self.iou, classes=self.classes)
+            # model.predict(self.filepath, save_txt=True, save_path=self.default_save_dir, device=self.device,
+            #               conf=self.conf, iou=self.iou, classes=self.classes)
+
+            model.predict(self.filepath, save_txt=True, save=False, device=self.device, conf=self.conf,
+                          iou=self.iou, classes=self.classes)
+
+            default_save_dir = 'runs/detect/predict/labels'  # Thư mục mặc định của YOLO
+            txt_files = glob.glob(os.path.join(default_save_dir, '*.txt'))
+            for txt_file in txt_files:
+                shutil.move(txt_file, self.default_save_dir)
             rework_classes(lab_path)
         except FileNotFoundError:
             from PIL import Image

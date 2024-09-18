@@ -1,6 +1,6 @@
-Last loaded image folder: E:/NLP/VAL_LabelImgs/AutoLabelImg/imgs_input
-Last loaded image name: aachen_000004_000019_leftImg8bit_1_phi_1.8.png
-Last loaded label folder: E:/NLP/VAL_LabelImgs/AutoLabelImg/save_dir
+Last loaded image folder: E:/VAL_LabelImgs/VAL_LabelImgs/imgs_input
+Last loaded image name: aachen_000005_000019_leftImg8bit_1_phi_3.6.png
+Last loaded label folder: E:/VAL_LabelImgs/VAL_LabelImgs/save_dir
 check_ls: null
 classes:
 - 2

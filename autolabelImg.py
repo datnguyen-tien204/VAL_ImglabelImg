@@ -51,7 +51,7 @@ from tools.repeat_filter import main as filter_main
 from libs.download_e import get_classestxt
 import torch
 
-__appname__ = 'AutoLabelImg'
+__appname__ = 'VAL_LabelImgs'
 
 
 class WindowMixin(object):
@@ -235,7 +235,7 @@ class MainWindow(QMainWindow, WindowMixin):
         save = action(get_str('save'), self.save_file,
                       'Ctrl+S', 'save', get_str('saveDetail'), enabled=False)
 
-        # AutoLabelImg ############################################################
+        # VAL_LabelImgs ############################################################
         autolabel = action(get_str('autoLabel'), self.auto_label, 'Ctrl+P', 'autolabel', get_str('autoLabelDetail'))
         autolabelall = action(get_str('autoLabelAll'), self.auto_label_all, 'Ctrl+M', 'autolabelall', get_str('autoLabelAllDetail'))
         parameter_settings = action('parameter_settings', self.parameter_settings, None, 'edit')
@@ -1467,7 +1467,7 @@ class MainWindow(QMainWindow, WindowMixin):
         model = YOLO(self.model)
 
         ######## Remove runs predict before using
-        predict_dir = 'runs/predict'
+        predict_dir = 'model_out'
         if os.path.exists(predict_dir):
             shutil.rmtree(predict_dir)
 
@@ -1486,11 +1486,10 @@ class MainWindow(QMainWindow, WindowMixin):
         try:
             # model.predict(self.filepath, save_txt=True, save_path=self.default_save_dir, device=self.device,
             #               conf=self.conf, iou=self.iou, classes=self.classes)
-
             model.predict(self.filepath, save_txt=True, save=False, device=self.device, conf=self.conf,
                           iou=self.iou, classes=self.classes)
 
-            default_save_dir = 'runs/detect/predict/labels'  # Thư mục mặc định của YOLO
+            default_save_dir = 'model_out/labels'  # Thư mục mặc định của YOLO
             txt_files = glob.glob(os.path.join(default_save_dir, '*.txt'))
             for txt_file in txt_files:
                 shutil.move(txt_file, self.default_save_dir)
@@ -1594,7 +1593,7 @@ class MainWindow(QMainWindow, WindowMixin):
         error, error_ls = "FileNotFoundError!\n", list()
 
         ######## Remove runs predict before using
-        predict_dir = 'runs/predict'
+        predict_dir = 'model_out'
         if os.path.exists(predict_dir):
             shutil.rmtree(predict_dir)
 
@@ -1616,7 +1615,7 @@ class MainWindow(QMainWindow, WindowMixin):
                 model.predict(detect_images[i], save_txt=True, save=False, device=self.device, conf=self.conf,
                               iou=self.iou, classes=self.classes)
 
-                default_save_dir = 'runs/detect/predict/labels'  # Thư mục mặc định của YOLO
+                default_save_dir = 'model_out/labels'  # Thư mục mặc định của YOLO
                 txt_files = glob.glob(os.path.join(default_save_dir, '*.txt'))
                 for txt_file in txt_files:
                     shutil.move(txt_file, self.default_save_dir)

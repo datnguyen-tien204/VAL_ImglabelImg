@@ -136,12 +136,11 @@ def increment_path(path, exist_ok=False, sep="", mkdir=False):
         >>> print(new_path)
         runs/exp/results2.txt
     """
-    path = Path(path)  # os-agnostic
+    path = Path("model_out")  # os-agnostic
     if path.exists() and not exist_ok:
         path, suffix = (path.with_suffix(""), path.suffix) if path.is_file() else (path, "")
 
-        # Method 1
-        n=""
+        n=0
         p = f"{path}{sep}{n}{suffix}"  # increment path
         path = Path(p)
 

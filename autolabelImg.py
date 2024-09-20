@@ -1903,14 +1903,20 @@ class MainWindow(QMainWindow, WindowMixin):
         return yolo_format
 
     def yolo_to_voc(self, txt_file, image_file, temp_folder):
+        # Nếu đã có class_file_path, sử dụng nó, nếu không hiển thị hộp thoại để chọn file
         if not hasattr(self, 'class_file_path') or not self.class_file_path:
             self.class_file_path, _ = QFileDialog.getOpenFileName(self, "Select classes.txt", "",
                                                                   "Text Files (*.txt);;All Files (*)")
+
+        # Kiểm tra nếu người dùng không chọn file
         if not self.class_file_path:
             QMessageBox.information(self, 'Error', 'No classes file selected.')
             return
+
+        # Đọc file classes.txt đã được chọn
         with open(self.class_file_path, "r") as f:
             class_names = f.read().splitlines()
+
         voc_format = "<annotation>\n"
         voc_format += f"\t<filename>{os.path.basename(image_file)}</filename>\n"
 

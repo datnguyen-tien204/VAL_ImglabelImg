@@ -1,0 +1,27 @@
+<annotation>
+	<folder></folder>
+	<filename>38776_N95_jpg.rf.c3dad661fa62fd23191b1091ef841eb9.jpg</filename>
+	<path>38776_N95_jpg.rf.c3dad661fa62fd23191b1091ef841eb9.jpg</path>
+	<source>
+		<database>roboflow.com</database>
+	</source>
+	<size>
+		<width>640</width>
+		<height>640</height>
+		<depth>3</depth>
+	</size>
+	<segmented>0</segmented>
+	<object>
+		<name>mask</name>
+		<pose>Unspecified</pose>
+		<truncated>0</truncated>
+		<difficult>0</difficult>
+		<occluded>0</occluded>
+		<bndbox>
+			<xmin>92</xmin>
+			<xmax>552</xmax>
+			<ymin>226</ymin>
+			<ymax>621</ymax>
+		</bndbox>
+	</object>
+</annotation>

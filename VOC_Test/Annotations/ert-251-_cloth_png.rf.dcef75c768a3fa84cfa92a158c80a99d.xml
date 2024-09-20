@@ -1,0 +1,27 @@
+<annotation>
+	<folder></folder>
+	<filename>ert-251-_cloth_png.rf.dcef75c768a3fa84cfa92a158c80a99d.jpg</filename>
+	<path>ert-251-_cloth_png.rf.dcef75c768a3fa84cfa92a158c80a99d.jpg</path>
+	<source>
+		<database>roboflow.com</database>
+	</source>
+	<size>
+		<width>640</width>
+		<height>640</height>
+		<depth>3</depth>
+	</size>
+	<segmented>0</segmented>
+	<object>
+		<name>mask</name>
+		<pose>Unspecified</pose>
+		<truncated>0</truncated>
+		<difficult>0</difficult>
+		<occluded>0</occluded>
+		<bndbox>
+			<xmin>102</xmin>
+			<xmax>551</xmax>
+			<ymin>345</ymin>
+			<ymax>604</ymax>
+		</bndbox>
+	</object>
+</annotation>

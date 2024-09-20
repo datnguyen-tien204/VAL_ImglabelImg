@@ -1,0 +1,27 @@
+<annotation>
+	<folder></folder>
+	<filename>11258_KN95_jpg.rf.58fb118c6c2b9ca92ce595816a5f6b4a.jpg</filename>
+	<path>11258_KN95_jpg.rf.58fb118c6c2b9ca92ce595816a5f6b4a.jpg</path>
+	<source>
+		<database>roboflow.com</database>
+	</source>
+	<size>
+		<width>640</width>
+		<height>640</height>
+		<depth>3</depth>
+	</size>
+	<segmented>0</segmented>
+	<object>
+		<name>mask</name>
+		<pose>Unspecified</pose>
+		<truncated>0</truncated>
+		<difficult>0</difficult>
+		<occluded>0</occluded>
+		<bndbox>
+			<xmin>70</xmin>
+			<xmax>641</xmax>
+			<ymin>297</ymin>
+			<ymax>641</ymax>
+		</bndbox>
+	</object>
+</annotation>

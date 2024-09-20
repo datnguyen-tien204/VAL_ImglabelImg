@@ -1,0 +1,27 @@
+<annotation>
+	<folder></folder>
+	<filename>angry-212-_jpg.rf.77bb1d2e47135a1b4e1998c28c759853.jpg</filename>
+	<path>angry-212-_jpg.rf.77bb1d2e47135a1b4e1998c28c759853.jpg</path>
+	<source>
+		<database>roboflow.com</database>
+	</source>
+	<size>
+		<width>640</width>
+		<height>640</height>
+		<depth>3</depth>
+	</size>
+	<segmented>0</segmented>
+	<object>
+		<name>mask</name>
+		<pose>Unspecified</pose>
+		<truncated>0</truncated>
+		<difficult>0</difficult>
+		<occluded>0</occluded>
+		<bndbox>
+			<xmin>91</xmin>
+			<xmax>475</xmax>
+			<ymin>225</ymin>
+			<ymax>476</ymax>
+		</bndbox>
+	</object>
+</annotation>

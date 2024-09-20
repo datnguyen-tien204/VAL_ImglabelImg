@@ -1,0 +1,27 @@
+<annotation>
+	<folder></folder>
+	<filename>3387p_png.rf.ca9b94f210d1a50784cdb0702c9a7840.jpg</filename>
+	<path>3387p_png.rf.ca9b94f210d1a50784cdb0702c9a7840.jpg</path>
+	<source>
+		<database>roboflow.com</database>
+	</source>
+	<size>
+		<width>640</width>
+		<height>640</height>
+		<depth>3</depth>
+	</size>
+	<segmented>0</segmented>
+	<object>
+		<name>mask</name>
+		<pose>Unspecified</pose>
+		<truncated>0</truncated>
+		<difficult>0</difficult>
+		<occluded>0</occluded>
+		<bndbox>
+			<xmin>148</xmin>
+			<xmax>354</xmax>
+			<ymin>214</ymin>
+			<ymax>379</ymax>
+		</bndbox>
+	</object>
+</annotation>

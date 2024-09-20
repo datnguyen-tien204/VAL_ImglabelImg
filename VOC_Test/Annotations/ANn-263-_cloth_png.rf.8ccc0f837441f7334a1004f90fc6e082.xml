@@ -1,0 +1,27 @@
+<annotation>
+	<folder></folder>
+	<filename>ANn-263-_cloth_png.rf.8ccc0f837441f7334a1004f90fc6e082.jpg</filename>
+	<path>ANn-263-_cloth_png.rf.8ccc0f837441f7334a1004f90fc6e082.jpg</path>
+	<source>
+		<database>roboflow.com</database>
+	</source>
+	<size>
+		<width>640</width>
+		<height>640</height>
+		<depth>3</depth>
+	</size>
+	<segmented>0</segmented>
+	<object>
+		<name>mask</name>
+		<pose>Unspecified</pose>
+		<truncated>0</truncated>
+		<difficult>0</difficult>
+		<occluded>0</occluded>
+		<bndbox>
+			<xmin>132</xmin>
+			<xmax>551</xmax>
+			<ymin>342</ymin>
+			<ymax>641</ymax>
+		</bndbox>
+	</object>
+</annotation>

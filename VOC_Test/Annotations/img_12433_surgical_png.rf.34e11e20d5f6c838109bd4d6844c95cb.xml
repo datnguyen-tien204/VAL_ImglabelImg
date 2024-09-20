@@ -1,0 +1,27 @@
+<annotation>
+	<folder></folder>
+	<filename>img_12433_surgical_png.rf.34e11e20d5f6c838109bd4d6844c95cb.jpg</filename>
+	<path>img_12433_surgical_png.rf.34e11e20d5f6c838109bd4d6844c95cb.jpg</path>
+	<source>
+		<database>roboflow.com</database>
+	</source>
+	<size>
+		<width>640</width>
+		<height>640</height>
+		<depth>3</depth>
+	</size>
+	<segmented>0</segmented>
+	<object>
+		<name>mask</name>
+		<pose>Unspecified</pose>
+		<truncated>0</truncated>
+		<difficult>0</difficult>
+		<occluded>0</occluded>
+		<bndbox>
+			<xmin>193</xmin>
+			<xmax>422</xmax>
+			<ymin>337</ymin>
+			<ymax>484</ymax>
+		</bndbox>
+	</object>
+</annotation>

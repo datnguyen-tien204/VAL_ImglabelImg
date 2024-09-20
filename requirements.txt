@@ -1,14 +1,4 @@
 # Usage: pip install -r requirements.txt
-<<<<<<< HEAD
-
-requests
-opencv-python
-psutil
-tqdm
-matplotlib
-pyyaml
-pandas
-=======
 absl-py==2.1.0
 cachetools==5.5.0
 certifi==2024.7.4
@@ -82,4 +72,3 @@ Werkzeug==3.0.4
 wheel==0.43.0
 yolov6==0.0.1
 zipp==3.20.2
->>>>>>> 88ea668 (Re-add yolov8x.pt with Git LFS)

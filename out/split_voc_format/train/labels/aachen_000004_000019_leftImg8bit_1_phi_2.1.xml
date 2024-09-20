@@ -1,0 +1,21 @@
+<annotation>
+	<filename>aachen_000004_000019_leftImg8bit_1_phi_2.1.png</filename>
+	<object>
+		<name>bicycle</name>
+		<bndbox>
+			<xmin>170</xmin>
+			<ymin>132</ymin>
+			<xmax>238</xmax>
+			<ymax>174</ymax>
+		</bndbox>
+	</object>
+	<object>
+		<name>bicycle</name>
+		<bndbox>
+			<xmin>396</xmin>
+			<ymin>135</ymin>
+			<xmax>426</xmax>
+			<ymax>155</ymax>
+		</bndbox>
+	</object>
+</annotation>

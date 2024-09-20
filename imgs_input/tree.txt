@@ -1,0 +1,18 @@
+Folder PATH listing for volume Data2
+Volume serial number is 6AB0-11CA
+E:.
+    aachen_000004_000019_leftImg8bit_1_phi_1.8.png
+    aachen_000004_000019_leftImg8bit_1_phi_2.1.png
+    aachen_000004_000019_leftImg8bit_1_phi_2.7.png
+    aachen_000004_000019_leftImg8bit_1_phi_3.1.png
+    aachen_000004_000019_leftImg8bit_1_phi_3.6.png
+    aachen_000005_000019_leftImg8bit_1_phi_1.8.png
+    aachen_000005_000019_leftImg8bit_1_phi_2.1.png
+    aachen_000005_000019_leftImg8bit_1_phi_2.7.png
+    aachen_000005_000019_leftImg8bit_1_phi_3.1.png
+    aachen_000005_000019_leftImg8bit_1_phi_3.6.png
+    aachen_000006_000019_leftImg8bit_1_phi_1.8.png
+    tree.txt
+    
+No subfolders exist 
+

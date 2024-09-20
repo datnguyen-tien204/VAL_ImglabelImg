@@ -13,8 +13,9 @@ import shutil
 import os
 import webbrowser as wb
 import glob
+from PIL import Image
 import yaml
-
+from xml.etree.ElementTree import Element, SubElement, tostring, ElementTree
 
 from functools import partial
 # from collections import defaultdict
@@ -1649,8 +1650,303 @@ class MainWindow(QMainWindow, WindowMixin):
         self.load_file(self.filepath)
         # self.import_dir_images(self.last_open_dir)
 
+    def get_image_size(self, image_file):
+        try:
+            with Image.open(image_file) as img:
+                width, height = img.size
+            return width, height
+        except Exception as e:
+            print(f"Error getting image size: {e}")
+            return None, None
+
     def train_test_split(self):
-        pass
+        # Mở hộp thoại để chọn thư mục chứa ảnh
+        image_folder = QFileDialog.getExistingDirectory(self, "Select Image Folder")
+        if not image_folder:
+            QMessageBox.information(self, 'Error', 'No folder selected.')
+            return
+
+        # Mở hộp thoại để chọn thư mục chứa nhãn
+        label_folder = QFileDialog.getExistingDirectory(self, "Select Label Folder")
+        if not label_folder:
+            QMessageBox.information(self, 'Error', 'No folder selected.')
+            return
+
+        # Hiển thị cửa sổ có thanh trượt để chọn tỷ lệ train/val/test
+        dialog = QDialog(self)
+        dialog.setWindowTitle("Train/Val/Test Split")
+
+        # Tăng kích thước của QDialog
+        dialog.resize(400, 400)
+
+        layout = QVBoxLayout()
+
+        # Nhãn và thanh trượt cho train set
+        train_slider_label = QLabel(f"Train ratio: {70}%")
+        layout.addWidget(train_slider_label)
+        train_slider = QSlider(Qt.Horizontal)
+        train_slider.setMinimum(0)
+        train_slider.setMaximum(100)
+        train_slider.setValue(70)
+        layout.addWidget(train_slider)
+
+        # Nhãn và thanh trượt cho val set
+        val_slider_label = QLabel(f"Validation ratio: {20}%")
+        layout.addWidget(val_slider_label)
+        val_slider = QSlider(Qt.Horizontal)
+        val_slider.setMinimum(0)
+        val_slider.setMaximum(100)
+        val_slider.setValue(20)
+        layout.addWidget(val_slider)
+
+        # Nhãn và thanh trượt cho test set
+        test_slider_label = QLabel(f"Test ratio: {10}%")
+        layout.addWidget(test_slider_label)
+        test_slider = QSlider(Qt.Horizontal)
+        test_slider.setMinimum(0)
+        test_slider.setMaximum(100)
+        test_slider.setValue(10)
+        layout.addWidget(test_slider)
+
+        # Nhãn hiển thị tổng cộng tỷ lệ
+        total_ratio_label = QLabel(f"Total: 100%")
+        layout.addWidget(total_ratio_label)
+
+        # Combo box để chọn kiểu định dạng phân tách
+        format_combo_box = QComboBox()
+        format_combo_box.addItems(["Split to Yolo Format", "Split to VOC Format", "Split to COCO Format"])
+        layout.addWidget(format_combo_box)
+
+        # Hàm để cập nhật giá trị các nhãn khi thay đổi thanh trượt
+        def update_sliders():
+            total = train_slider.value() + val_slider.value() + test_slider.value()
+            if total != 100:
+                if total > 100:
+                    difference = total - 100
+                    if test_slider.value() >= difference:
+                        test_slider.setValue(test_slider.value() - difference)
+                    else:
+                        difference -= test_slider.value()
+                        test_slider.setValue(0)
+                        val_slider.setValue(val_slider.value() - difference)
+                else:
+                    difference = 100 - total
+                    if test_slider.value() + difference <= 100:
+                        test_slider.setValue(test_slider.value() + difference)
+                    else:
+                        difference -= (100 - test_slider.value())
+                        test_slider.setValue(100)
+                        val_slider.setValue(val_slider.value() + difference)
+
+            # Cập nhật nhãn hiển thị tỷ lệ
+            train_slider_label.setText(f"Train ratio: {train_slider.value()}%")
+            val_slider_label.setText(f"Validation ratio: {val_slider.value()}%")
+            test_slider_label.setText(f"Test ratio: {test_slider.value()}%")
+            total_ratio_label.setText(f"Total: {train_slider.value() + val_slider.value() + test_slider.value()}%")
+
+        # Kết nối thanh trượt với hàm cập nhật
+        train_slider.valueChanged.connect(update_sliders)
+        val_slider.valueChanged.connect(update_sliders)
+        test_slider.valueChanged.connect(update_sliders)
+
+        # Nút để xác nhận
+        ok_button = QPushButton("OK")
+        ok_button.clicked.connect(dialog.accept)
+        layout.addWidget(ok_button)
+
+        dialog.setLayout(layout)
+
+        if dialog.exec() == QDialog.Accepted:
+            train_ratio = train_slider.value() / 100
+            val_ratio = val_slider.value() / 100
+            test_ratio = test_slider.value() / 100
+            selected_format = format_combo_box.currentText()
+
+            # Gọi hàm để chia tập dữ liệu và chuyển đổi định dạng
+            self.split_data(image_folder, label_folder, train_ratio, val_ratio, test_ratio, selected_format)
+
+    def split_data(self, image_folder, label_folder, train_ratio, val_ratio, test_ratio, selected_format):
+        # Lấy danh sách ảnh và nhãn
+        images = glob.glob(os.path.join(image_folder, "*.png")) + glob.glob(os.path.join(image_folder, "*.jpg"))
+        labels = glob.glob(os.path.join(label_folder, "*.txt" if "VOC" in selected_format else "*.txt"))
+
+        # Phân chia theo tỉ lệ
+        total_size = len(images)
+        train_size = int(train_ratio * total_size)
+        val_size = int(val_ratio * total_size)
+        test_size = total_size - train_size - val_size
+
+        train_images, val_images, test_images = images[:train_size], images[train_size:train_size + val_size], images[
+                                                                                                               train_size + val_size:]
+        train_labels, val_labels, test_labels = labels[:train_size], labels[train_size:train_size + val_size], labels[
+                                                                                                               train_size + val_size:]
+        print("train_labels", train_labels)
+
+        # Tạo thư mục lưu trữ
+        output_folder = os.path.join(self.default_save_dir, f"split_{selected_format.split(' ')[-2].lower()}_format")
+        os.makedirs(os.path.join(output_folder, "train", "images"), exist_ok=True)
+        os.makedirs(os.path.join(output_folder, "train", "labels"), exist_ok=True)
+        os.makedirs(os.path.join(output_folder, "val", "images"), exist_ok=True)
+        os.makedirs(os.path.join(output_folder, "val", "labels"), exist_ok=True)
+        os.makedirs(os.path.join(output_folder, "test", "images"), exist_ok=True)
+        os.makedirs(os.path.join(output_folder, "test", "labels"), exist_ok=True)
+
+        # Chuyển đổi và di chuyển file
+        self.convert_and_move_files(train_images, train_labels, "train", selected_format, output_folder)
+        self.convert_and_move_files(val_images, val_labels, "val", selected_format, output_folder)
+        self.convert_and_move_files(test_images, test_labels, "test", selected_format, output_folder)
+
+    def convert_and_move_files(self, image_paths, label_paths, split_type, selected_format, output_folder):
+        print("label_paths", label_paths)
+        temp_folder = os.path.join(output_folder, "temp_xml")  # Tạo thư mục tạm để lưu file XML
+        print("label_paths", label_paths)
+        label_dict = {os.path.splitext(os.path.basename(label_path))[0]: label_path for label_path in label_paths}
+
+        for img_path in image_paths:
+            img_name = os.path.splitext(os.path.basename(img_path))[0]
+
+            print("label_dict", label_dict)
+
+            if img_name in label_dict:
+                label_path = label_dict[img_name]
+                image_output_dir = os.path.join(output_folder, split_type, "images")
+                label_output_dir = os.path.join(output_folder, split_type, "labels")
+                os.makedirs(image_output_dir, exist_ok=True)
+                os.makedirs(label_output_dir, exist_ok=True)
+
+                # Di chuyển ảnh
+                shutil.copy(img_path, os.path.join(image_output_dir, os.path.basename(img_path)))
+
+                print("selected_format", selected_format)
+
+                # Xử lý nhãn dựa trên định dạng
+                if selected_format == "Split to VOC Format":
+                    if label_path.endswith(".txt"):
+                        # Chuyển từ YOLO (TXT) sang VOC (XML) và lưu tạm vào thư mục tạm
+                        temp_xml_path = self.yolo_to_voc(label_path, img_path, temp_folder)
+                        print("temp_xml_path", temp_xml_path)
+                        # Di chuyển file XML từ thư mục tạm vào thư mục đích
+                        shutil.move(temp_xml_path, os.path.join(label_output_dir, img_name + ".xml"))
+                    else:
+                        # Nếu đã là VOC (XML), chỉ cần di chuyển
+                        shutil.copy(label_path, os.path.join(label_output_dir, os.path.basename(label_path)))
+
+                # Xử lý các định dạng khác nếu cần
+                elif selected_format == "Split to Yolo Format":
+                    if label_path.endswith(".xml"):
+                        # Chuyển từ VOC (XML) sang YOLO (TXT)
+                        yolo_label = self.voc_to_yolo(label_path, output_folder)
+                        txt_label_path = os.path.join(label_output_dir, img_name + ".txt")
+                        with open(txt_label_path, 'w') as f:
+                            f.write(yolo_label)
+                    else:
+                        # Nếu đã là YOLO (TXT), chỉ cần di chuyển
+                        shutil.copy(label_path, os.path.join(label_output_dir, os.path.basename(label_path)))
+
+                elif selected_format == "Split to COCO Format":
+                    # Thêm logic chuyển đổi sang định dạng COCO nếu cần
+                    shutil.copy(label_path, os.path.join(label_output_dir, os.path.basename(label_path)))
+
+            else:
+                print(f"Warning: No label found for image {img_name}")
+
+        #Xóa thư mục tạm sau khi xử lý xong
+        if os.path.exists(temp_folder):
+            shutil.rmtree(temp_folder)
+
+        print("Conversion and move completed.")
+
+        msg_box = QMessageBox(self)
+        msg_box.setWindowTitle("Conversion Completed")
+        msg_box.setText(f"Conversion successful!\nOutput folder: {output_folder}")
+
+        # Tạo nút "Open Folder" để mở thư mục đã xử lý
+        open_button = QPushButton("Open Folder", msg_box)
+        msg_box.addButton(open_button, QMessageBox.ActionRole)
+        open_button.clicked.connect(lambda: self.open_folder(output_folder))
+
+        # Tạo nút OK để đóng hộp thoại
+        ok_button = msg_box.addButton(QMessageBox.Ok)
+
+        # Hiển thị hộp thoại
+        msg_box.exec()
+
+    def open_folder(self, folder_path):
+        # Sử dụng QDesktopServices để mở thư mục trong hệ điều hành
+        QDesktopServices.openUrl(QUrl.fromLocalFile(folder_path))
+
+    def voc_to_yolo(self, xml_file, output_folder):
+        # Tạo danh sách các lớp từ file VOC XML
+        class_names = set()
+
+        # Chuyển đổi file VOC .xml sang YOLO .txt
+        tree = ElementTree.parse(xml_file)
+        root = tree.getroot()
+        yolo_format = ""
+        for obj in root.iter("object"):
+            class_name = obj.find("name").text
+            class_names.add(class_name)  # Lưu lại tên lớp
+            bbox = obj.find("bndbox")
+            xmin = int(bbox.find("xmin").text)
+            ymin = int(bbox.find("ymin").text)
+            xmax = int(bbox.find("xmax").text)
+            ymax = int(bbox.find("ymax").text)
+            # Chuyển đổi sang YOLO format
+            yolo_format += f"{class_name} {xmin} {ymin} {xmax} {ymax}\n"
+
+        # Ghi file classes.txt vào thư mục cha của split_yolo_format
+        classes_file_path = os.path.join(os.path.dirname(output_folder), "classes.txt")
+        with open(classes_file_path, "w") as class_file:
+            for class_name in sorted(class_names):
+                class_file.write(f"{class_name}\n")
+
+        return yolo_format
+
+    def yolo_to_voc(self, txt_file, image_file, temp_folder):
+        if not hasattr(self, 'class_file_path') or not self.class_file_path:
+            self.class_file_path, _ = QFileDialog.getOpenFileName(self, "Select classes.txt", "",
+                                                                  "Text Files (*.txt);;All Files (*)")
+        if not self.class_file_path:
+            QMessageBox.information(self, 'Error', 'No classes file selected.')
+            return
+        with open(self.class_file_path, "r") as f:
+            class_names = f.read().splitlines()
+        voc_format = "<annotation>\n"
+        voc_format += f"\t<filename>{os.path.basename(image_file)}</filename>\n"
+
+        with open(txt_file, "r") as f:
+            for line in f.readlines():
+                class_id, x_center, y_center, bbox_width, bbox_height = map(float, line.strip().split())
+                class_name = class_names[int(class_id)]  # Lấy tên class từ file classes.txt dựa vào ID
+
+                # Chuyển đổi bbox từ YOLO format sang VOC format
+                image_width, image_height = self.get_image_size(image_file)
+                xmin = int((x_center - bbox_width / 2) * image_width)
+                ymin = int((y_center - bbox_height / 2) * image_height)
+                xmax = int((x_center + bbox_width / 2) * image_width)
+                ymax = int((y_center + bbox_height / 2) * image_height)
+
+                voc_format += "\t<object>\n"
+                voc_format += f"\t\t<name>{class_name}</name>\n"
+                voc_format += "\t\t<bndbox>\n"
+                voc_format += f"\t\t\t<xmin>{xmin}</xmin>\n"
+                voc_format += f"\t\t\t<ymin>{ymin}</ymin>\n"
+                voc_format += f"\t\t\t<xmax>{xmax}</xmax>\n"
+                voc_format += f"\t\t\t<ymax>{ymax}</ymax>\n"
+                voc_format += "\t\t</bndbox>\n"
+                voc_format += "\t</object>\n"
+
+        voc_format += "</annotation>\n"
+
+        # Tạo đường dẫn tạm để lưu file XML
+        os.makedirs(temp_folder, exist_ok=True)
+        temp_xml_path = os.path.join(temp_folder, os.path.splitext(os.path.basename(txt_file))[0] + ".xml")
+
+        # Lưu file VOC XML vào thư mục tạm
+        with open(temp_xml_path, "w") as xml_file:
+            xml_file.write(voc_format)
+
+        return temp_xml_path
 
     def create_default(self):
         config = {

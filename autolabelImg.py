@@ -15,6 +15,7 @@ import webbrowser as wb
 import glob
 from PIL import Image
 import yaml
+import xml.etree.ElementTree as ET
 from xml.etree.ElementTree import Element, SubElement, tostring, ElementTree
 
 from functools import partial
@@ -1792,11 +1793,84 @@ class MainWindow(QMainWindow, WindowMixin):
         os.makedirs(os.path.join(output_folder, "test", "labels"), exist_ok=True)
 
         # Chuyển đổi và di chuyển file
-        self.convert_and_move_files(train_images, train_labels, "train", selected_format, output_folder)
-        self.convert_and_move_files(val_images, val_labels, "val", selected_format, output_folder)
-        self.convert_and_move_files(test_images, test_labels, "test", selected_format, output_folder)
+        status_button=True
+        self.convert_and_move_files(train_images, train_labels, "train", selected_format, output_folder,status_button)
+        status_button=False
+        self.convert_and_move_files(val_images, val_labels, "val", selected_format, output_folder,status_button)
+        status_button = False
+        self.convert_and_move_files(test_images, test_labels, "test", selected_format, output_folder,status_button)
 
-    def convert_and_move_files(self, image_paths, label_paths, split_type, selected_format, output_folder):
+    def move_corrected_VOC(self,folder_path,output_file):
+        # Lấy tất cả tên ảnh trong thư mục images
+        image_folder = os.path.join(folder_path, "images")
+        if not os.path.exists(image_folder):
+            print(f"Directory {image_folder} does not exist")
+            return
+
+        image_filenames = []
+
+        # Duyệt qua tất cả các file trong thư mục images
+        for filename in os.listdir(image_folder):
+            # Kiểm tra nếu file có phần mở rộng là định dạng ảnh
+            if filename.endswith(('.jpg', '.jpeg', '.png', '.bmp', '.tiff')):
+                # Lấy tên file không có phần mở rộng
+                image_filenames.append(os.path.splitext(filename)[0])
+
+        # Ghi các tên file vào output file
+        with open(output_file, 'w') as f:
+            for image_name in image_filenames:
+                f.write(f"{image_name}\n")
+
+    # Move Images to the correct folder
+    def move_images_label_to_folders(self,base_folder,type):
+        if(type=="images"):
+            jpeg_images_dir = os.path.join(base_folder, 'JPEGImages')
+            os.makedirs(jpeg_images_dir, exist_ok=True)
+            split_folders = ['train', 'val', 'test']
+
+            for split_folder in split_folders:
+                image_folder = os.path.join(base_folder, split_folder, 'images')
+                if os.path.exists(image_folder):
+                    for filename in os.listdir(image_folder):
+                        if filename.endswith(('.jpg', '.jpeg', '.png', '.bmp', '.tiff')):
+                            source_path = os.path.join(image_folder, filename)
+                            dest_path = os.path.join(jpeg_images_dir, filename)
+                            shutil.move(source_path, dest_path)
+                            print(f"Moved {filename} to {jpeg_images_dir}")
+                else:
+                    print(f"Directory {image_folder} does not exist")
+        if(type=="labels"):
+            label_images_dir = os.path.join(base_folder, 'Annotations')
+            os.makedirs(label_images_dir, exist_ok=True)
+            split_folders = ['train', 'val', 'test']
+
+            for split_folder in split_folders:
+                image_folder = os.path.join(base_folder, split_folder, 'labels')
+                if os.path.exists(image_folder):
+                    for filename in os.listdir(image_folder):
+                        if filename.endswith(('.xml')):
+                            source_path = os.path.join(image_folder, filename)
+                            dest_path = os.path.join(label_images_dir, filename)
+                            shutil.move(source_path, dest_path)
+                            print(f"Moved {filename} to {label_images_dir}")
+                else:
+                    print(f"Directory {image_folder} does not exist")
+
+    def extract_classes_from_xml(self,annotations_folder, output_file):
+        classes = set()
+        for filename in os.listdir(annotations_folder):
+            if filename.endswith('.xml'):
+                file_path = os.path.join(annotations_folder, filename)
+                tree = ET.parse(file_path)
+                root = tree.getroot()
+                for obj in root.findall('object'):
+                    class_name = obj.find('name').text
+                    classes.add(class_name)
+        with open(output_file, 'w') as f:
+            for class_name in sorted(classes):
+                f.write(f"{class_name}\n")
+
+    def convert_and_move_files(self, image_paths, label_paths, split_type, selected_format, output_folder,status_button):
         print("label_paths", label_paths)
         temp_folder = os.path.join(output_folder, "temp_xml")  # Tạo thư mục tạm để lưu file XML
         print("label_paths", label_paths)
@@ -1819,32 +1893,60 @@ class MainWindow(QMainWindow, WindowMixin):
 
                 print("selected_format", selected_format)
 
-                # Xử lý nhãn dựa trên định dạng
+                # VOC Processed
                 if selected_format == "Split to VOC Format":
                     if label_path.endswith(".txt"):
-                        # Chuyển từ YOLO (TXT) sang VOC (XML) và lưu tạm vào thư mục tạm
+                        # Convert from YOLO (TXT) to VOC (XML)
                         temp_xml_path = self.yolo_to_voc(label_path, img_path, temp_folder)
-                        print("temp_xml_path", temp_xml_path)
-                        # Di chuyển file XML từ thư mục tạm vào thư mục đích
+                        # Move the XML file to the output folder
                         shutil.move(temp_xml_path, os.path.join(label_output_dir, img_name + ".xml"))
+
+                        # Modified folder and files
+                        JPEGImages_dir=os.path.join(output_folder,"JPEGImages")
+                        AnnDirs=os.path.join(output_folder,"Annotations")
+                        ImageSetsDir=os.path.join(output_folder,"ImageSets/Main")
+                        os.makedirs(JPEGImages_dir, exist_ok=True)
+                        os.makedirs(AnnDirs, exist_ok=True)
+                        os.makedirs(ImageSetsDir, exist_ok=True)
+
+                        # Move the image name to the ImageSets/Main folder
+                        self.move_corrected_VOC(os.path.join(output_folder, 'train'),
+                                                     os.path.join(ImageSetsDir, 'train.txt'))
+                        self.move_corrected_VOC(os.path.join(output_folder, 'val'),
+                                                os.path.join(ImageSetsDir, 'trainval.txt'))
+                        self.move_corrected_VOC(os.path.join(output_folder, 'test'),
+                                                os.path.join(ImageSetsDir, 'test.txt'))
+
+                        # Move the images and labels to the correct folders
+                        ## Move the image to the JPEGImages folder
+                        self.move_images_label_to_folders(output_folder, "images")
+                        ## Move the label to the Annotations folder
+                        self.move_images_label_to_folders(output_folder,"labels")
+                        #Extract information to labelmap.txt
+                        self.extract_classes_from_xml(AnnDirs,os.path.join(output_folder,"labelmap.txt"))
+
+                        if os.path.exists(os.path.join(output_folder, "train")):
+                            shutil.rmtree(os.path.join(output_folder, "train"))
+                        if os.path.exists(os.path.join(output_folder, "test")):
+                            shutil.rmtree(os.path.join(output_folder, "test"))
+                        if os.path.exists(os.path.join(output_folder, "val")):
+                            shutil.rmtree(os.path.join(output_folder, "val"))
+
                     else:
-                        # Nếu đã là VOC (XML), chỉ cần di chuyển
+                        # If already in VOC (XML), just move
                         shutil.copy(label_path, os.path.join(label_output_dir, os.path.basename(label_path)))
 
-                # Xử lý các định dạng khác nếu cần
+                # Processed YOLO format
                 elif selected_format == "Split to Yolo Format":
                     if label_path.endswith(".xml"):
-                        # Chuyển từ VOC (XML) sang YOLO (TXT)
                         yolo_label = self.voc_to_yolo(label_path, output_folder)
                         txt_label_path = os.path.join(label_output_dir, img_name + ".txt")
                         with open(txt_label_path, 'w') as f:
                             f.write(yolo_label)
                     else:
-                        # Nếu đã là YOLO (TXT), chỉ cần di chuyển
                         shutil.copy(label_path, os.path.join(label_output_dir, os.path.basename(label_path)))
 
                 elif selected_format == "Split to COCO Format":
-                    # Thêm logic chuyển đổi sang định dạng COCO nếu cần
                     shutil.copy(label_path, os.path.join(label_output_dir, os.path.basename(label_path)))
 
             else:
@@ -1856,27 +1958,24 @@ class MainWindow(QMainWindow, WindowMixin):
 
         print("Conversion and move completed.")
 
-        msg_box = QMessageBox(self)
-        msg_box.setWindowTitle("Conversion Completed")
-        msg_box.setText(f"Conversion successful!\nOutput folder: {output_folder}")
 
-        # Tạo nút "Open Folder" để mở thư mục đã xử lý
-        open_button = QPushButton("Open Folder", msg_box)
-        msg_box.addButton(open_button, QMessageBox.ActionRole)
-        open_button.clicked.connect(lambda: self.open_folder(output_folder))
-
-        # Tạo nút OK để đóng hộp thoại
-        ok_button = msg_box.addButton(QMessageBox.Ok)
-
-        # Hiển thị hộp thoại
-        msg_box.exec()
+        # MessageBox complete
+        if(status_button==True):
+            msg_box = QMessageBox(self)
+            msg_box.setWindowTitle("Conversion Completed")
+            msg_box.setText(f"Conversion successful!\nOutput folder: {output_folder}")
+            open_button = QPushButton("Open Folder", msg_box)
+            msg_box.addButton(open_button, QMessageBox.ActionRole)
+            open_button.clicked.connect(
+                lambda: (self.open_folder(output_folder), msg_box.accept()))
+            ok_button = msg_box.addButton(QMessageBox.Ok)
+            ok_button.clicked.connect(msg_box.accept)
+            msg_box.exec()
 
     def open_folder(self, folder_path):
-        # Sử dụng QDesktopServices để mở thư mục trong hệ điều hành
         QDesktopServices.openUrl(QUrl.fromLocalFile(folder_path))
 
     def voc_to_yolo(self, xml_file, output_folder):
-        # Tạo danh sách các lớp từ file VOC XML
         class_names = set()
 
         # Chuyển đổi file VOC .xml sang YOLO .txt

@@ -53,6 +53,7 @@ from tools.repeat_filter import main as filter_main
 from libs.download_e import get_classestxt
 import torch
 import zipfile
+import hashlib
 
 
 __appname__ = 'VAL_LabelImgs'
@@ -261,6 +262,9 @@ class MainWindow(QMainWindow, WindowMixin):
         #################### Train Test Split ##############################
         train_test_split= action(get_str('trainTestSplit'), self.train_test_split, 'Ctrl+T', 'trainTestSplit', get_str('trainTestSplitDetail'))
 
+        #################### Remove Duplicate Images ##############################
+        remove_duplicate= action(get_str('removeDuplicate'), self.remove_duplicate_images, 'Ctrl+R+I', 'removeDuplicate', get_str('removeDuplicateDetail'))
+
 ######################################################################################
         def get_format_meta(format):
             """
@@ -452,7 +456,7 @@ class MainWindow(QMainWindow, WindowMixin):
         self.tools = self.toolbar('Tools')
         self.actions.beginner = (
             open, open_dir, change_save_dir, open_next_image, open_prev_image, verify, save, save_format,
-            autolabel, autolabelall,train_test_split, None, create, copy, delete, None, zoom_in, zoom, zoom_out, fit_window, fit_width)
+            autolabel, autolabelall,train_test_split,remove_duplicate, None, create, copy, delete, None, zoom_in, zoom, zoom_out, fit_window, fit_width)
 
         self.actions.advanced = (
             open, open_dir, change_save_dir, open_next_image, open_prev_image, save, save_format, None,
@@ -1675,6 +1679,8 @@ class MainWindow(QMainWindow, WindowMixin):
         if not label_folder:
             QMessageBox.information(self, 'Error', 'No folder selected.')
             return
+        self.import_dir_images(image_folder)
+        # self.open_dir_dialog()
 
         # SHOW DIALOG
         dialog = QDialog(self)
@@ -2093,6 +2099,100 @@ class MainWindow(QMainWindow, WindowMixin):
 
 
     ############################################## END TRAIN TEST SPLIT ########################################################
+
+
+    ############################################## DUPICATE IMAGES REMOVE ########################################################
+    def file_hash(self, filepath):
+        """Tính hash của file."""
+        with open(filepath, 'rb') as f:
+            return hashlib.md5(f.read()).hexdigest()
+
+    def remove_duplicates_function(self, input_dir, output_dir):
+        """Xóa ảnh trùng lặp và chuyển ảnh không trùng lặp vào thư mục đầu ra."""
+        file_list = os.listdir(input_dir)
+        duplicates = []
+        hash_keys = dict()
+        files_to_move = []
+
+        for index, filename in enumerate(file_list):
+            filepath = os.path.join(input_dir, filename)
+            if os.path.isfile(filepath):
+                filehash = self.file_hash(filepath)
+                if filehash not in hash_keys:
+                    # Lưu hash mới vào dict
+                    hash_keys[filehash] = filename
+                    files_to_move.append(filename)  # Chỉ lưu lại để di chuyển sau khi xử lý trùng lặp
+                else:
+                    # Nếu trùng, thêm vào danh sách duplicates
+                    duplicates.append((filename, hash_keys[filehash]))
+
+        if duplicates:
+            reply = QMessageBox.question(
+                self,
+                'Question',
+                f'Detect {len(duplicates)} duplicate images, do you want to delete them?',
+                QMessageBox.Yes | QMessageBox.No,
+                QMessageBox.No
+            )
+            if reply == QMessageBox.Yes:
+                # Xóa các file trùng lặp nếu người dùng đồng ý
+                for filename, _ in duplicates:
+                    os.remove(os.path.join(input_dir, filename))
+                QMessageBox.information(self, 'Info', 'Duplicate images deleted successfully.')
+
+                # Tạo thư mục đầu ra và di chuyển các file không trùng lặp
+                os.makedirs(output_dir, exist_ok=True)
+                for filename in files_to_move:
+                    os.rename(os.path.join(input_dir, filename), os.path.join(output_dir, filename))
+            else:
+                QMessageBox.information(self, 'Info', 'No images were deleted.')
+        else:
+            # Thông báo nếu không có file trùng lặp
+            QMessageBox.information(self, 'Info', 'No duplicate images found.')
+
+        return len(duplicates) > 0  # Trả về True nếu có ảnh trùng lặp
+
+    def remove_duplicate_images(self):
+        """Chọn thư mục ảnh và thực hiện xóa ảnh trùng lặp."""
+        image_folder = QFileDialog.getExistingDirectory(self, "Select Image Folder")
+        if not image_folder:
+            QMessageBox.information(self, 'Error', 'No folder selected.')
+            return
+
+        # Đặt thư mục đầu ra
+        saved_folder = os.path.join(self.default_save_dir, "removed_duplicated_images")
+        has_duplicates = self.remove_duplicates_function(image_folder, saved_folder)
+
+        # Thông báo hoàn tất
+
+        msg_box = QMessageBox(self)
+        if not has_duplicates:
+            msg_box.setWindowTitle("No Duplicate Images Found")
+            msg_box.setText("No moving or deleting files. Image is in original folder")
+        else:
+            msg_box.setWindowTitle("Removed Duplicate Images Completed")
+            msg_box.setText(f"Removed Duplicate Images successful!\nOutput folder: {saved_folder}")
+
+        # Thêm nút mở thư mục
+        open_button = QPushButton("Open Folder", msg_box)
+        msg_box.addButton(open_button, QMessageBox.ActionRole)
+        open_button.clicked.connect(lambda: (self.open_folder(saved_folder), msg_box.accept()))
+
+        # Thêm nút zip thư mục
+        zip_button = QPushButton("Zip Files", msg_box)
+        msg_box.addButton(zip_button, QMessageBox.ActionRole)
+        zip_button.clicked.connect(lambda: (self.zip_files(saved_folder), msg_box.accept()))
+
+        # Vô hiệu hóa các nút nếu không có ảnh trùng lặp
+        if not has_duplicates:
+            open_button.setDisabled(True)
+            zip_button.setDisabled(True)
+
+        # Thêm nút OK
+        ok_button = msg_box.addButton(QMessageBox.Ok)
+        ok_button.clicked.connect(msg_box.accept)
+        msg_box.exec()
+
     def create_default(self):
         config = {
             'Last loaded image folder': None,

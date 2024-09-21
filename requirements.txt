@@ -72,3 +72,4 @@ Werkzeug==3.0.4
 wheel==0.43.0
 yolov6==0.0.1
 zipp==3.20.2
+huggingface_hub==0.25.0

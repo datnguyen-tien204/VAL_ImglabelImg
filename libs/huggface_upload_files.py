@@ -1,15 +1,12 @@
-from huggingface_hub import HfApi
+from huggingface_hub import HfApi,HfFileSystem
 from cryptography.fernet import Fernet
 import json
 import zipfile
 import os
-
-try:
-    from PyQt5.QtWidgets import QDialog, QVBoxLayout, QLabel, QLineEdit, QPushButton, QCheckBox, QFileDialog, QMessageBox,QInputDialog, QProgressBar, QApplication,QComboBox
-    from PyQt5.QtCore import Qt, QApplication
-except:
-    from PyQt4.QtWidgets import QDialog, QVBoxLayout, QLabel, QLineEdit, QPushButton, QCheckBox, QFileDialog, QMessageBox,QInputDialog, QProgressBar, QApplication, QComboBox
-    from PyQt4.QtCore import Qt
+import sys
+import time
+from PyQt5.QtWidgets import QDialog, QApplication, QVBoxLayout, QLabel, QLineEdit, QPushButton, QCheckBox, QFileDialog, QMessageBox,QInputDialog, QProgressBar, QApplication,QComboBox
+from PyQt5.QtCore import Qt
 
 ### CHECK LOGIN HUGGINGFACE
 def check_login(self, api_key, username):
@@ -66,25 +63,27 @@ def login_hugff(self, status, api_key=None, username=None):
         if check_login(self, api_key, username):
             # Save credentials if login is successful
             encrypt_and_save_data({"api_key": api_key, "username": username})
+            return True,None
         else:
-            # Show error message with options to "Try Again" or "Close"
-            msg_box = QMessageBox(self)
-            msg_box.setWindowTitle("Error")
-            msg_box.setText("Login failed. Please check your API key and username.")
-            msg_box.setStandardButtons(QMessageBox.Retry | QMessageBox.Close)
-            msg_box.setDefaultButton(QMessageBox.Retry)
-            choice = msg_box.exec_()
-            if choice == QMessageBox.Retry:
-                api_key, ok_key = QInputDialog.getText(self, "API Key", "Enter your Hugging Face API key:")
-                if not ok_key:
-                    return
-                username, ok_user = QInputDialog.getText(self, "Username", "Enter your Hugging Face username:")
-                if not ok_user:
-                    return
-                login_hugff(self, status , api_key, username)
+            return False,None
+            # # Show error message with options to "Try Again" or "Close"
+            # msg_box = QMessageBox(self)
+            # msg_box.setWindowTitle("Error")
+            # msg_box.setText("Login failed. Please check your API key and username.")
+            # msg_box.setStandardButtons(QMessageBox.Retry | QMessageBox.Close)
+            # msg_box.setDefaultButton(QMessageBox.Retry)
+            # choice = msg_box.exec_()
+            # if choice == QMessageBox.Retry:
+            #     api_key, ok_key = QInputDialog.getText(self, "API Key", "Enter your Hugging Face API key:")
+            #     if not ok_key:
+            #         return
+            #     username, ok_user = QInputDialog.getText(self, "Username", "Enter your Hugging Face username:")
+            #     if not ok_user:
+            #         return
+            #     login_hugff(self, status , api_key, username)
 
-            elif choice == QMessageBox.Close:
-                return
+            # elif choice == QMessageBox.Close:
+            #     return
 
     elif status ==2:
         try:
@@ -114,20 +113,39 @@ def get_user_datasets(self):
 
     api = HfApi(token=api_key)
     try:
-        datasets = api.list_datasets(author=username, use_auth_token=True)
+        datasets = api.list_datasets(author=username, use_auth_token=True,full=True)
         repositories = [dataset.id for dataset in datasets]
-        input_dialog = QInputDialog(self)
-        input_dialog.setWindowTitle("Select dataset repository")
-        input_dialog.setLabelText("Choose a Huggingface Dataset Repository:")
-        input_dialog.resize(600, 300)
-        input_dialog.setComboBoxItems(repositories)
-        input_dialog.setCurrentIndex(0)
+        combo_box_dialog = QDialog(self)
+        combo_box_dialog.setWindowTitle("Select dataset repository")
+        layout = QVBoxLayout(combo_box_dialog)
 
-        if input_dialog.exec_() == QInputDialog.Accepted:
-            repo = input_dialog.textValue()
+        label = QLabel("Choose a Huggingface Dataset Repository:")
+        layout.addWidget(label)
+
+        # Create a QComboBox and add the repository options
+        combo_box = QComboBox(combo_box_dialog)
+        combo_box.addItems(repositories)
+        layout.addWidget(combo_box)
+
+        # Create an OK button to confirm the selection
+        ok_button = QPushButton("OK", combo_box_dialog)
+        layout.addWidget(ok_button)
+
+        # Define the function to handle the OK button click
+        def on_ok_clicked():
+            selected_repo = combo_box.currentText()
+            combo_box_dialog.accept()
+            return selected_repo
+
+        ok_button.clicked.connect(on_ok_clicked)
+
+        # Execute the dialog and get the selected repository
+        if combo_box_dialog.exec_() == QDialog.Accepted:
+            repo = combo_box.currentText()
         else:
-            QMessageBox.information(self, 'Information!', 'Please Huggingface Dataset Repository before.')
+            QMessageBox.information(self, 'Information!', 'Please select a Huggingface Dataset Repository.')
             return
+
         return repo
 
     except Exception as e:
@@ -232,7 +250,7 @@ def create_new_dataset_repository(self):
 
             try:
                 # Create repository
-                api.create_repo(name=repo_name, repo_type="dataset", private=private)
+                api.create_repo(repo_id=repo_name, repo_type="dataset", private=private)
                 QMessageBox.information(self, "Success", f"Repository '{repo_name}' created successfully!")
 
 
@@ -314,6 +332,51 @@ def create_new_dataset_repository(self):
     dialog.exec_()
 
 ### UPLOAD FILES OR FOLDER TO HUGGINGFACE
+class UploadProgressDialog(QDialog):
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self.setWindowTitle("Upload Progress")
+        self.resize(500, 300)
+        self.layout = QVBoxLayout(self)
+        self.status_label = QLabel("Preparing to upload...", self)
+        self.progress_bar = QProgressBar(self)
+        self.network_speed_label = QLabel("Network Speed: 0 KB/s", self)  # Hiển thị tốc độ mạng
+        self.progress_bar.setAlignment(Qt.AlignCenter)
+        self.progress_bar.setRange(0, 100)
+        self.layout.addWidget(self.status_label)
+        self.layout.addWidget(self.progress_bar)
+        self.layout.addWidget(self.network_speed_label)  # Thêm nhãn cho tốc độ mạng
+
+    def update_status(self, status, progress, speed=0):
+        self.status_label.setText(status)
+        self.progress_bar.setValue(progress)
+        self.network_speed_label.setText(f"Network Speed: {speed:.2f} KB/s")
+
+# Hàm tải file lên với hiển thị tốc độ mạng
+def upload_file_with_progress(api, file_path, repo_id, progress_dialog):
+    CHUNK_SIZE = 5 * 1024 * 1024  # Chia file thành chunk 5MB
+    file_size = os.path.getsize(file_path)
+    progress = 0
+    start_time = time.time()
+
+    with open(file_path, "rb") as f:
+        for chunk_start in range(0, file_size, CHUNK_SIZE):
+            chunk = f.read(CHUNK_SIZE)
+            api.upload_file(
+                path_or_fileobj=chunk,
+                path_in_repo=os.path.basename(file_path),
+                repo_id=repo_id,
+                repo_type="dataset",
+                resume_upload=True
+            )
+
+            # Cập nhật thanh tiến trình và tốc độ mạng
+            progress += len(chunk)
+            elapsed_time = time.time() - start_time
+            speed = (progress / elapsed_time) / 1024  # Tính KB/s
+            percent_done = int((progress / file_size) * 100)
+            progress_dialog.update_status(f"Uploading {os.path.basename(file_path)}", percent_done, speed)
+
 def upload_files_to_existing_repo_files(self):
     class UploadProgressDialog(QDialog):
         def __init__(self, parent=None):

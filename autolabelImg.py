@@ -51,6 +51,7 @@ from ultralytics import YOLO
 from tools.change_labels import rework_classes
 from tools.repeat_filter import main as filter_main
 from libs.download_e import get_classestxt
+from libs.huggface_upload_files import login_hugff,create_new_dataset_repository,upload_files_to_existing_repo_files,upload_folder_to_existing_repo,delete_datasets_hugff_repo
 import torch
 import zipfile
 import hashlib
@@ -408,6 +409,7 @@ class MainWindow(QMainWindow, WindowMixin):
             edit=self.menu(get_str('menu_edit')),
             view=self.menu(get_str('menu_view')),
             additional=self.menu(get_str('menu_additional')),
+            hugff=self.menu(get_str('menu_hugff')),
             help=self.menu(get_str('menu_help')),
             recentFiles=QMenu(get_str('menu_openRecent')),
             repeatFilter=QMenu(get_str('menu_repeatFilter')),
@@ -444,6 +446,26 @@ class MainWindow(QMainWindow, WindowMixin):
             fit_window, fit_width))
         add_actions(self.menus.additional, (parameter_settings, model_selection, load_data, self.menus.repeatFilter))
         add_actions(self.menus.repeatFilter, (filterate, filter_prev, filter_next))
+
+        ### Hugging Face Actions
+        #### LOGIN ACTIONS
+        self.login_action = QAction('Login to Hugging Face', self)
+        self.login_action.triggered.connect(self.login_hugff_ui)
+        ### NEW DATASET ACTIONS
+        self.create_new_dataset_action = QAction('Create New Dataset Repository', self)
+        self.create_new_dataset_action.triggered.connect(self.create_new_dsrepo)
+
+        self.create_upload_datasetfiles = QAction('Upload Dataset Files', self)
+        self.create_upload_datasetfiles.triggered.connect(self.upload_dataset_hugff_files)
+
+        self.create_upload_datasetfolders = QAction('Upload Dataset Folders', self)
+        self.create_upload_datasetfolders.triggered.connect(self.upload_dataset_hugff_folder)
+
+        self.rm_datasetsRepo = QAction('Remove Dataset Repository', self)
+        self.rm_datasetsRepo.triggered.connect(self.delete_huggingface_dataset)
+        add_actions(self.menus.hugff, (self.login_action,self.create_new_dataset_action,self.create_upload_datasetfiles,self.create_upload_datasetfolders,self.rm_datasetsRepo,))
+
+        ## End Hugging Face Actions
 
         self.menus.file.aboutToShow.connect(self.update_file_menu)
 
@@ -2192,6 +2214,54 @@ class MainWindow(QMainWindow, WindowMixin):
         ok_button = msg_box.addButton(QMessageBox.Ok)
         ok_button.clicked.connect(msg_box.accept)
         msg_box.exec()
+
+    ##################### END REMOVE DUPLICATE IMAGES #############################
+    ##################### HUGGING FACE DATASET HUB ################################
+    def login_hugff_ui(self):
+        dialog = QDialog(self)
+        dialog.setWindowTitle('HuggingFace Login')
+        dialog.setFixedSize(300, 200)
+        username_label = QLabel('Username:', dialog)
+        username_input = QLineEdit(dialog)
+        api_key_label = QLabel('API Key:', dialog)
+        api_key_input = QLineEdit(dialog)
+        api_key_input.setEchoMode(QLineEdit.Password)
+        submit_button = QPushButton('Submit', dialog)
+        layout = QVBoxLayout()
+        layout.addWidget(username_label)
+        layout.addWidget(username_input)
+        layout.addWidget(api_key_label)
+        layout.addWidget(api_key_input)
+        layout.addWidget(submit_button)
+        dialog.setLayout(layout)
+
+        def submit_login():
+            username = username_input.text()
+            api_key = api_key_input.text()
+
+            if not username or not api_key:
+                QMessageBox.warning(dialog, 'Warning', 'Please enter both username and API Key.')
+                return
+
+            status,_=login_hugff(self,1,api_key,username)
+            if status:
+                QMessageBox.information(dialog, 'Success', 'Login successful.')
+                dialog.accept()
+            elif status==False:
+                QMessageBox.warning(dialog, 'Warning', 'Login failed. Please check your username and API Key.')
+
+        submit_button.clicked.connect(submit_login)
+        dialog.exec_()
+    ######### CREATE NEW DATASET REPO ON HUGGING FACE DATASET HUB #########
+    def create_new_dsrepo(self):
+        create_new_dataset_repository(self)
+    ######### UPLOAD DATASET FILES TO HUGGING FACE DATASET HUB #########
+    def upload_dataset_hugff_files(self):
+        upload_files_to_existing_repo_files(self)
+    def upload_dataset_hugff_folder(self):
+        upload_folder_to_existing_repo(self)
+    def delete_huggingface_dataset(self):
+        delete_datasets_hugff_repo(self)
 
     def create_default(self):
         config = {
